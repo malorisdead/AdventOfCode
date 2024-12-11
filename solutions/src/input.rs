@@ -29,10 +29,7 @@ impl AdventInput {
     }
 
     pub fn get_csv(&self) -> Result<Vec<String>> {
-        Ok(fs::read_to_string(&self.file)?
-            .split(',')
-            .map(|s| s.to_owned())
-            .collect())
+        self.get_split(',')
     }
 
     pub fn get_csv_as<T>(&self) -> Result<Vec<T>>
@@ -40,10 +37,7 @@ impl AdventInput {
         T: FromStr,
         <T as FromStr>::Err: Debug,
     {
-        Ok(fs::read_to_string(&self.file)?
-            .split(',')
-            .map(|v| v.parse::<T>().unwrap())
-            .collect())
+        self.get_split_as(',')
     }
 
     pub fn get_lines(&self) -> Result<Vec<String>> {
@@ -59,7 +53,7 @@ impl AdventInput {
         <T as FromStr>::Err: Debug,
     {
         let read = fs::read_to_string(&self.file)?;
-        Ok(read.lines().map(|x| x.parse::<T>().unwrap()).collect())
+        Ok(read.lines().filter_map(|x| x.parse().ok()).collect())
     }
 
     pub fn get_grouped_as<T>(&self) -> Result<Vec<T>>
@@ -67,10 +61,34 @@ impl AdventInput {
         T: FromStr,
         <T as FromStr>::Err: Debug,
     {
+        self.get_split_str_as("\n\n")
+    }
+
+    pub fn get_split(&self, pat: char) -> Result<Vec<String>> {
         let read = fs::read_to_string(&self.file)?;
-        Ok(read
-            .split("\n\n")
-            .map(|x| x.parse::<T>().unwrap())
-            .collect())
+        Ok(read.split(pat).map(|x| x.to_owned()).collect())
+    }
+
+    pub fn get_split_str(&self, pat: &str) -> Result<Vec<String>> {
+        let read = fs::read_to_string(&self.file)?;
+        Ok(read.split(pat).map(|x| x.to_owned()).collect())
+    }
+
+    pub fn get_split_as<T>(&self, pat: char) -> Result<Vec<T>>
+    where
+        T: FromStr,
+        <T as FromStr>::Err: Debug,
+    {
+        let read = fs::read_to_string(&self.file)?;
+        Ok(read.split(pat).filter_map(|x| x.parse().ok()).collect())
+    }
+
+    pub fn get_split_str_as<T>(&self, pat: &str) -> Result<Vec<T>>
+    where
+        T: FromStr,
+        <T as FromStr>::Err: Debug,
+    {
+        let read = fs::read_to_string(&self.file)?;
+        Ok(read.split(pat).filter_map(|x| x.parse().ok()).collect())
     }
 }
