@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::solver::Solver;
 use anyhow::Result;
 
@@ -19,11 +21,8 @@ impl Solver<usize, usize> for Solution {
     }
 
     fn part_two(&self) -> Result<usize> {
-        let mut stones = self.input().get_split_as::<usize>(' ')?;
-        for _ in 0..75 {
-            stones = blink(&stones);
-        }
-        Ok(stones.len())
+        let stones = self.input().get_split_as::<usize>(' ')?;
+        Ok(blink_smarter_not_harder(&stones, 75))
     }
 }
 
@@ -45,6 +44,31 @@ fn blink(stones: &[usize]) -> Vec<usize> {
     output
 }
 
+fn blink_smarter_not_harder(stones: &[usize], iterations: usize) -> usize {
+    let mut stone_counts: HashMap<usize, usize> =
+        HashMap::from_iter(stones.iter().map(|&s| (s, 1usize)));
+    let mut new_counts: HashMap<usize, usize> = HashMap::new();
+    for _ in 0..iterations {
+        for (&k, &num) in &stone_counts {
+            if k == 0 {
+                *new_counts.entry(1).or_insert(0) += num;
+            } else if (k.ilog10() + 1) % 2 == 0 {
+                let split = 10usize.pow((k.ilog10() + 1) / 2);
+                let left = k / split;
+                let right = k - (left * split);
+                *new_counts.entry(left).or_insert(0) += num;
+                *new_counts.entry(right).or_insert(0) += num;
+            } else {
+                *new_counts.entry(k * 2024).or_insert(0) += num;
+            }
+        }
+        // This should still take less memory than brute-forcing this
+        stone_counts = new_counts.clone();
+        new_counts.clear();
+    }
+    stone_counts.values().sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,5 +88,12 @@ mod tests {
             test = blink(&test);
         }
         assert_eq!(55312, test.len());
+    }
+
+    #[test]
+    fn should_work_smarter() {
+        let test = vec![125, 17];
+        let stone_count = blink_smarter_not_harder(&test, 25);
+        assert_eq!(55312, stone_count);
     }
 }
